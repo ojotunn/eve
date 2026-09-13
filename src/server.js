@@ -18,6 +18,13 @@ fs.mkdirSync(DATA, { recursive: true });
 ensurePortraitDir();
 
 let world;
+// RESET_WORLD=1 recomeca do zero na proxima subida. O mundo anterior nao e
+// apagado: fica guardado ao lado, com a hora no nome.
+if (process.env.RESET_WORLD === '1' && fs.existsSync(FILE)) {
+  const backup = FILE.replace(/\.json$/, '') + '-' + Date.now() + '.json';
+  fs.renameSync(FILE, backup);
+  console.log('[eden] mundo anterior guardado em', backup);
+}
 try {
   world = JSON.parse(fs.readFileSync(FILE, 'utf8'));
   console.log('[eden] mundo retomado no ciclo', world.tick);
