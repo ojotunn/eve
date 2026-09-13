@@ -1,0 +1,16 @@
+{
+  "name": "polis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/server.js",
+    "sim": "node scripts/dry-run.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0"
+  }
+}

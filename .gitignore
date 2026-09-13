@@ -1,0 +1,9 @@
+node_modules/
+.env
+data/
+data-test/
+*.log
+*.png
+!public/portraits/adam.png
+!public/portraits/eve.png
+public/portraits/raw/
