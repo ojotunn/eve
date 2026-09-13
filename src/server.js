@@ -83,6 +83,15 @@ async function loop() {
 
 const app = express();
 app.use(express.static(path.join(here, '..', 'public'), { etag: false, setHeaders: (r) => r.setHeader('Cache-Control', 'no-cache') }));
+// Ticker, contrato e redes vem de variavel de ambiente: no dia do lancamento
+// e so gravar a variavel no Railway e aparece na tela, sem novo deploy.
+app.get('/api/config', (_req, res) => res.json({
+  symbol: process.env.TOKEN_SYMBOL || '',
+  ca: process.env.TOKEN_CA || '',
+  tokenUrl: process.env.TOKEN_URL || '',
+  x: process.env.LINK_X || '',
+  telegram: process.env.LINK_TELEGRAM || '',
+}));
 app.get('/api/state', (_req, res) => res.json(view()));
 app.get('/api/stream', (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
