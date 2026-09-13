@@ -58,10 +58,35 @@ export function portraitPrompt(sex, kin) {
   return `Portrait of a ${who}. ${FRAMING} ${kin || ''}${STYLE}`;
 }
 
+// O rosto na hora, feito da cara dos dois pais. Nao depende de API nenhuma, e e
+// o que segura a arvore quando a cota do Gemini acaba (429) — que foi exatamente
+// o que aconteceu no dia do lancamento.
+export function blendPortrait(person, parents) {
+  if (!parents || parents.length !== 2) return null;
+  const pais = parents.map(p => portraitPath(p.name)).filter(f => fs.existsSync(f));
+  if (pais.length !== 2) return null;
+  ensurePortraitDir();
+  const proc = spawn('python', [path.join(ROOT, 'scripts', 'misturar-rostos.py'),
+                                pais[0], pais[1], portraitPath(person.name), person.name],
+                     { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'] });
+  let erro = '';
+  proc.stderr.on('data', (d) => { erro += d; });
+  proc.on('close', (code) => {
+    if (code === 0) {
+      console.log(`[portrait] ${person.name} misturado dos pais`);
+      if (aoFicarPronto) aoFicarPronto(person.name);
+    } else console.error(`[portrait] mistura de ${person.name} falhou:`, erro.slice(-300));
+  });
+  proc.on('error', (e) => console.error('[portrait] mistura', person.name, e.message));
+  return proc;
+}
+
 // person: { name, sex }. refs: caminhos de PNG que guiam o desenho.
 export function makePortrait(person, parents, opts = {}) {
   if (process.env.EDEN_NO_PORTRAIT === '1') return;
   if (!opts.replace && hasPortrait(person.name)) return;
+  // cara na hora; o desenho de verdade vem depois e substitui, se a API deixar
+  if (!opts.semMistura) blendPortrait(person, parents);
   fs.mkdirSync(DIR, { recursive: true });
 
   const refs = [];
@@ -81,11 +106,15 @@ export function makePortrait(person, parents, opts = {}) {
   const child = spawn('python', [SCRIPT, tmp, portraitPrompt(person.sex, kin), ...refs], {
     cwd: ROOT,
     env: { ...process.env, GEMINI_RAZAO: '1:1', GEMINI_TAMANHO: '2K' },
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  let saida = '';
+  child.stdout.on('data', (d) => { saida += d; });
+  child.stderr.on('data', (d) => { saida += d; });
   child.on('error', (e) => console.error('[portrait]', person.name, e.message));
   child.on('close', (code) => {
     if (code !== 0) {
+      console.error(`[portrait] gerador de ${person.name}:`, saida.trim().slice(-260));
       const tentativa = (opts.tentativa || 1);
       console.log(`[portrait] ${person.name} falhou (${code})` + (tentativa < 3 ? ', tentando de novo' : ', desisti'));
       if (tentativa < 3) {
@@ -110,6 +139,7 @@ export function backfillPortraits(world) {
   const pais = (semRosto.parents || []).map(id => world.people[id]).filter(Boolean);
   desenhando = true;
   const proc = makePortrait(semRosto, pais.length === 2 ? pais : null);
+  if (!proc && pais.length === 2) blendPortrait(semRosto, pais);
   if (!proc) { desenhando = false; return; }
   proc.on('close', () => { setTimeout(() => { desenhando = false; }, 5000); });
   proc.on('error', () => { desenhando = false; });
