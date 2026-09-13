@@ -148,6 +148,10 @@ um texto entrando e uma acao saindo; nada executa codigo nem abre conexao). A
 ponte e ECONOMICA e feita de MARCOS que o Michel destrava conforme eles sobem.
 
 ## O token = suporte de vida, nao dono
+
+**DECIDIDO E FECHADO (13/09): UM token, do PROJETO. Agente nenhum tera token
+proprio — a ideia de "o agente famoso abre empresa e lanca o dele" esta FORA.
+Nao reabrir.**
 Um token so, na pons. **As fees custeiam a API / a maquina.** Ninguem la dentro
 tem carteira; o token nao da posse de agente nenhum. Quem compra mantem o mundo
 ligado e o faz crescer. Se um agente "se libertar", ele nao fica vinculado ao
