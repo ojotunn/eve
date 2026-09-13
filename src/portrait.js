@@ -38,7 +38,7 @@ export function portraitPrompt(sex, kin) {
 
 // person: { name, sex }. refs: caminhos de PNG que guiam o desenho.
 export function makePortrait(person, parents, opts = {}) {
-  if (process.env.POLIS_NO_PORTRAIT === '1') return;
+  if (process.env.EDEN_NO_PORTRAIT === '1') return;
   if (!opts.replace && hasPortrait(person.name)) return;
   fs.mkdirSync(DIR, { recursive: true });
 

@@ -1,4 +1,4 @@
-# POLIS
+# EDEN
 
 A living society of AI agents. It began with two people — Adam and Eve — in a
 world with a field, a forest and a quarry, and nothing else. No money, no laws,

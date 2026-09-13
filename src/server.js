@@ -18,10 +18,10 @@ fs.mkdirSync(DATA, { recursive: true });
 let world;
 try {
   world = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-  console.log('[polis] mundo retomado no ciclo', world.tick);
+  console.log('[eden] mundo retomado no ciclo', world.tick);
 } catch {
   world = bootstrap(W.newWorld());
-  console.log('[polis] mundo novo');
+  console.log('[eden] mundo novo');
 }
 
 const save = () => fs.writeFileSync(FILE, JSON.stringify(world));
@@ -67,14 +67,14 @@ async function loop() {
   running = true;
   try {
     if (W.alive(world).length === 0) {
-      console.log('[polis] ninguem vivo. O mundo parou no ciclo', world.tick);
+      console.log('[eden] ninguem vivo. O mundo parou no ciclo', world.tick);
       return;
     }
     await runTick(world, emit);
     save();
-    console.log(`[polis] ciclo ${world.tick} | vivos ${W.alive(world).length} | nascimentos ${world.births} | mortes ${world.dead.length} | chamadas ${usage.calls}`);
+    console.log(`[eden] ciclo ${world.tick} | vivos ${W.alive(world).length} | nascimentos ${world.births} | mortes ${world.dead.length} | chamadas ${usage.calls}`);
   } catch (err) {
-    console.error('[polis] ciclo falhou:', err.message);
+    console.error('[eden] ciclo falhou:', err.message);
   } finally {
     running = false;
     setTimeout(loop, tickMs(world));
@@ -92,11 +92,11 @@ app.get('/api/stream', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[polis] no ar em http://localhost:${PORT} | ciclo de ${tickMs(world) / 1000}s`);
+  console.log(`[eden] no ar em http://localhost:${PORT} | ciclo de ${tickMs(world) / 1000}s`);
   // PAUSED=1 sobe o site sem ligar o relogio: da para publicar e olhar sem
   // gastar um centavo de API ate voce querer comecar.
   const parado = process.env.PAUSED === '1' || process.env.STATIC_ONLY === '1';
-  console.log(parado ? '[polis] o mundo esta PARADO (PAUSED=1). Ninguem age ate voce desligar isso.'
-                     : '[polis] o mundo esta correndo.');
+  console.log(parado ? '[eden] o mundo esta PARADO (PAUSED=1). Ninguem age ate voce desligar isso.'
+                     : '[eden] o mundo esta correndo.');
   if (!parado) setTimeout(loop, 1500);
 });

@@ -3,7 +3,7 @@ import 'dotenv/config';
 import * as W from '../src/world.js';
 import { bootstrap, runTick } from '../src/engine.js';
 import { usage } from '../src/brain.js';
-process.env.POLIS_NO_PORTRAIT = '1';
+process.env.EDEN_NO_PORTRAIT = '1';
 const MAX = Number(process.argv[2] || 30);
 const w = bootstrap(W.newWorld());
 for (let i = 0; i < MAX && W.alive(w).length; i++) {

@@ -1,4 +1,7 @@
-# POLIS — spec v0.1 (nome de trabalho)
+# EDEN — spec
+
+(Nome escolhido pelo Michel em 13/09/2026. A pasta e o repositorio
+continuam com os nomes antigos; so o produto se chama EDEN.)
 
 Dois agentes. Um mundo com bens e sem dinheiro. Eles produzem, trocam, falam,
 prometem, se reproduzem, brigam e morrem. Ninguem escreveu a sociedade que vai
