@@ -8,8 +8,24 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
-const DIR = path.join(ROOT, 'public', 'portraits');
 const SCRIPT = path.join(ROOT, 'scripts', 'gerar-gemini.py');
+
+// Os rostos moram no VOLUME, nao dentro do conteiner: senao todo deploy apagaria
+// a cara de todo mundo que nasceu. Adam e Eve vem no repositorio e sao copiados
+// para la na primeira subida.
+const SEED = path.join(ROOT, 'public', 'portraits');
+export const DIR = path.join(process.env.DATA_DIR || path.join(ROOT, 'data'), 'portraits');
+
+export function ensurePortraitDir() {
+  fs.mkdirSync(DIR, { recursive: true });
+  if (!fs.existsSync(SEED) || SEED === DIR) return DIR;
+  for (const f of fs.readdirSync(SEED)) {
+    if (!f.endsWith('.png')) continue;
+    const alvo = path.join(DIR, f);
+    if (!fs.existsSync(alvo)) fs.copyFileSync(path.join(SEED, f), alvo);
+  }
+  return DIR;
+}
 
 // O PADRAO. Mexer aqui muda a galeria inteira daqui para a frente.
 // Enquadramento antes de estilo: foi o enquadramento que saiu errado na Eve.
@@ -25,9 +41,15 @@ export const hasPortrait = (name) => fs.existsSync(portraitPath(name));
 
 // Todo retrato passa por aqui antes de aparecer: o gerador entrega o busto
 // terminando numa linha reta, e dentro do circulo isso vira foto quadrada.
+let aoFicarPronto = null;
+export const onPortraitReady = (fn) => { aoFicarPronto = fn; };
+
 function normalize(file, name) {
   const fix = spawn('python', [path.join(ROOT, 'scripts', 'normalizar-retrato.py'), file], { cwd: ROOT, stdio: 'ignore' });
-  fix.on('close', () => console.log(`[portrait] ${name} pronto`));
+  fix.on('close', () => {
+    console.log(`[portrait] ${name} pronto`);
+    if (aoFicarPronto) aoFicarPronto(name);   // a arvore troca a inicial pelo rosto na hora
+  });
   fix.on('error', (e) => console.error('[portrait] normalizar', name, e.message));
 }
 
@@ -63,9 +85,32 @@ export function makePortrait(person, parents, opts = {}) {
   });
   child.on('error', (e) => console.error('[portrait]', person.name, e.message));
   child.on('close', (code) => {
-    if (code !== 0) return console.log(`[portrait] ${person.name} falhou (${code})`);
+    if (code !== 0) {
+      const tentativa = (opts.tentativa || 1);
+      console.log(`[portrait] ${person.name} falhou (${code})` + (tentativa < 3 ? ', tentando de novo' : ', desisti'));
+      if (tentativa < 3) {
+        setTimeout(() => makePortrait(person, parents, { ...opts, tentativa: tentativa + 1 }), 30000 * tentativa);
+      }
+      return;
+    }
     if (tmp !== out && fs.existsSync(tmp)) fs.renameSync(tmp, out);
     normalize(out, person.name);
   });
   return child;
+}
+
+// Ninguem pode ficar sem rosto. Roda na subida e a cada ciclo: quem estiver sem
+// retrato entra na fila, um de cada vez para nao atropelar a API de imagem.
+let desenhando = false;
+export function backfillPortraits(world) {
+  if (desenhando || process.env.EDEN_NO_PORTRAIT === '1') return;
+  const gente = Object.values(world.people);
+  const semRosto = gente.find(p => !hasPortrait(p.name));
+  if (!semRosto) return;
+  const pais = (semRosto.parents || []).map(id => world.people[id]).filter(Boolean);
+  desenhando = true;
+  const proc = makePortrait(semRosto, pais.length === 2 ? pais : null);
+  if (!proc) { desenhando = false; return; }
+  proc.on('close', () => { setTimeout(() => { desenhando = false; }, 5000); });
+  proc.on('error', () => { desenhando = false; });
 }

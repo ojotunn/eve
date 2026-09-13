@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import * as W from './world.js';
 import { bootstrap, runTick, tickMs } from './engine.js';
 import { usage } from './brain.js';
+import { ensurePortraitDir, backfillPortraits, onPortraitReady, hasPortrait, DIR as PORTRAIT_DIR } from './portrait.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const DATA = process.env.DATA_DIR || path.join(here, '..', 'data');
@@ -14,6 +15,7 @@ const FILE = path.join(DATA, 'world.json');
 const PORT = Number(process.env.PORT || 8439);
 
 fs.mkdirSync(DATA, { recursive: true });
+ensurePortraitDir();
 
 let world;
 try {
@@ -27,6 +29,10 @@ try {
 const save = () => fs.writeFileSync(FILE, JSON.stringify(world));
 
 const clients = new Set();
+
+// Quando o rosto de alguem fica pronto, a arvore troca a inicial pela cara
+// sem ninguem precisar atualizar a pagina.
+onPortraitReady((name) => emit({ kind: 'portrait', who: name, tick: world.tick, place: '', text: name }));
 function emit(ev) {
   const line = 'data: ' + JSON.stringify(ev) + '\n\n';
   for (const res of clients) res.write(line);
@@ -39,6 +45,7 @@ function view() {
     place: p.place, alive: p.alive,
     hunger: p.hunger, energy: p.energy, age: p.age, born: p.born, parents: p.parents,
     model: p.model.replace('claude-', '').replace('-4-5', '').replace('-5', ''),
+    face: hasPortrait(p.name),
     items: Object.fromEntries(Object.entries(p.items).filter(([k]) => k.indexOf('#age') < 0)),
     cause: p.cause || null,
   }));
@@ -72,6 +79,7 @@ async function loop() {
     }
     await runTick(world, emit);
     save();
+    backfillPortraits(world);
     console.log(`[eden] ciclo ${world.tick} | vivos ${W.alive(world).length} | nascimentos ${world.births} | mortes ${world.dead.length} | chamadas ${usage.calls}`);
   } catch (err) {
     console.error('[eden] ciclo falhou:', err.message);
@@ -82,6 +90,11 @@ async function loop() {
 }
 
 const app = express();
+// Os rostos vem do volume (onde os recem-nascidos sao gravados); o resto do site
+// vem do repositorio. Retrato pode ficar em cache, pagina nao.
+app.use('/portraits', express.static(PORTRAIT_DIR, {
+  etag: true, maxAge: '1h', fallthrough: true,
+}));
 app.use(express.static(path.join(here, '..', 'public'), { etag: false, setHeaders: (r) => r.setHeader('Cache-Control', 'no-cache') }));
 // Ticker, contrato e redes vem de variavel de ambiente: no dia do lancamento
 // e so gravar a variavel no Railway e aparece na tela, sem novo deploy.
