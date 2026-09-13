@@ -24,6 +24,14 @@ Nothing on the page is scripted.
 | `TICK_MS` | milliseconds per turn of the world (default 45000) |
 | `TURNS_PER_TICK` | how many people act each turn (default 6) — this caps the cost |
 | `FOUNDER_MODEL` | model for Adam and Eve (default `claude-opus-5`) |
+| `PAUSED` | `1` serves the site without running the world — no API spend at all |
+
+## Deploying
+
+The image needs both runtimes: Node runs the world, Python and Pillow draw and
+standardise the portraits. `Dockerfile` handles that. Mount a volume at
+`/app/data` so the world survives a restart, and set `PAUSED=1` until you want
+the clock to start.
 
 ## How it is built
 

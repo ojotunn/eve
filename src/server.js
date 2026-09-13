@@ -93,5 +93,10 @@ app.get('/api/stream', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[polis] no ar em http://localhost:${PORT} | ciclo de ${tickMs(world) / 1000}s`);
-  if (process.env.STATIC_ONLY !== '1') setTimeout(loop, 1500);
+  // PAUSED=1 sobe o site sem ligar o relogio: da para publicar e olhar sem
+  // gastar um centavo de API ate voce querer comecar.
+  const parado = process.env.PAUSED === '1' || process.env.STATIC_ONLY === '1';
+  console.log(parado ? '[polis] o mundo esta PARADO (PAUSED=1). Ninguem age ate voce desligar isso.'
+                     : '[polis] o mundo esta correndo.');
+  if (!parado) setTimeout(loop, 1500);
 });
