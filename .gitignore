@@ -6,4 +6,5 @@ data-test/
 *.png
 !public/portraits/adam.png
 !public/portraits/eve.png
+!public/brand/*.png
 public/portraits/raw/
